@@ -1,0 +1,40 @@
+---
+# =========================================================================
+# Common Role - Default Variables
+# =========================================================================
+# This role handles OS preparation, package installation, firewall setup,
+# and SELinux configuration for all distributions.
+
+# Package lists per distribution family
+common_packages_debian:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - python3
+  - python3-pip
+  - git
+  - net-tools
+  - netcat
+  - tar
+  - gzip
+  - logrotate
+
+common_packages_redhat:
+  - ca-certificates
+  - curl
+  - gnupg2
+  - python3
+  - python3-pip
+  - git
+  - net-tools
+  - nc
+  - tar
+  - gzip
+  - logrotate
+  - policycoreutils-python-utils  # For SELinux
+
+# Firewall configuration
+firewall_backend: "auto"  # auto, iptables, firewalld, ufw

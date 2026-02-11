@@ -1,0 +1,68 @@
+---
+# =========================================================================
+# Honeypot Deployment Playbook
+# =========================================================================
+# This playbook deploys all enabled honeypots dynamically based on the
+# honeypot registry in group_vars/all.yml
+#
+# Usage:
+#   Deploy all enabled honeypots:
+#     ansible-playbook playbooks/deploy.yml
+#
+#   Deploy specific honeypot(s):
+#     ansible-playbook playbooks/deploy.yml --tags cowrie
+#     ansible-playbook playbooks/deploy.yml --tags cowrie,dionaea
+#
+#   Skip infrastructure setup (Docker, common packages):
+#     ansible-playbook playbooks/deploy.yml --skip-tags infrastructure
+
+- name: Deploy Honeypot Infrastructure and Services
+  hosts: honeypot_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display deployment information
+      debug:
+        msg:
+          - "Starting honeypot deployment"
+          - "Target hosts: {{ ansible_play_hosts }}"
+          - "OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+
+  roles:
+    # Infrastructure setup
+    - role: common
+      tags:
+        - infrastructure
+        - common
+
+    - role: docker
+      tags:
+        - infrastructure
+        - docker
+
+  tasks:
+    # Deploy honeypots dynamically based on registry
+    - name: Deploy enabled honeypots
+      include_role:
+        name: "{{ item.key }}"
+      loop: "{{ honeypots | dict2items }}"
+      when: item.value.enabled | default(false)
+      tags:
+        - honeypots
+        - "{{ item.key }}"
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg:
+          - "=========================================="
+          - "Honeypot Deployment Complete"
+          - "=========================================="
+          - "Enabled honeypots:"
+          - "{{ honeypots | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list }}"
+          - ""
+          - "Next steps:"
+          - "1. Check status: ansible-playbook playbooks/status.yml"
+          - "2. View logs in /opt/<honeypot-name>/logs/"
+          - "3. Configure firewall rules if needed"

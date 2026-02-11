@@ -1,0 +1,33 @@
+---
+# =========================================================================
+# Honeypot Base Role - Remove Firewall Ports
+# =========================================================================
+# Removes firewall rules for honeypot ports
+
+- name: Remove port from firewalld
+  firewalld:
+    port: "{{ port_config.host }}/{{ port_config.protocol }}"
+    permanent: yes
+    state: disabled
+    immediate: yes
+  when: detected_firewall == "firewalld"
+  ignore_errors: yes
+
+- name: Remove port from ufw
+  ufw:
+    rule: allow
+    port: "{{ port_config.host }}"
+    proto: "{{ port_config.protocol }}"
+    delete: yes
+  when: detected_firewall == "ufw"
+  ignore_errors: yes
+
+- name: Remove port from iptables
+  iptables:
+    chain: INPUT
+    protocol: "{{ port_config.protocol }}"
+    destination_port: "{{ port_config.host }}"
+    jump: ACCEPT
+    state: absent
+  when: detected_firewall == "iptables"
+  ignore_errors: yes

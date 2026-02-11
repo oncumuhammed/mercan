@@ -1,0 +1,8 @@
+---
+# =========================================================================
+# Honeytrap Honeypot Role - Default Variables
+# =========================================================================
+
+honeypot_name: "honeytrap"
+honeypot_config: "{{ honeypots.honeytrap }}"
+honeypot_compose_template: "docker-compose.yml.j2"

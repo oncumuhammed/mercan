@@ -1,0 +1,20 @@
+---
+# =========================================================================
+# Honeypot Base Role - Default Variables
+# =========================================================================
+# This role contains reusable tasks that all honeypot roles include.
+# It implements the shared functionality for directory creation, Docker
+# Compose deployment, systemd integration, logrotate, and firewall rules.
+
+# These variables should be set by the calling honeypot role:
+# - honeypot_name: Name of the honeypot (e.g., "cowrie")
+# - honeypot_config: Configuration dictionary from honeypots registry
+
+# Directories
+honeypot_data_dir: "{{ honeypot_base_dir }}/{{ honeypot_name }}/data"
+honeypot_logs_dir: "{{ honeypot_base_dir }}/{{ honeypot_name }}/logs"
+honeypot_config_dir: "{{ honeypot_base_dir }}/{{ honeypot_name }}/config"
+honeypot_compose_dir: "{{ honeypot_base_dir }}/{{ honeypot_name }}"
+
+# Systemd service
+honeypot_service_name: "honeypot-{{ honeypot_name }}"

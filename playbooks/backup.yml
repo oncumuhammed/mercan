@@ -1,0 +1,73 @@
+---
+# =========================================================================
+# Honeypot Backup Playbook
+# =========================================================================
+# This playbook creates timestamped backups of all enabled honeypots'
+# data and configuration files.
+#
+# Usage:
+#   Backup all enabled honeypots:
+#     ansible-playbook playbooks/backup.yml
+#
+#   Backup specific honeypot(s):
+#     ansible-playbook playbooks/backup.yml --tags cowrie
+
+- name: Backup Honeypot Data and Configuration
+  hosts: honeypot_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display backup information
+      debug:
+        msg:
+          - "Starting backup of honeypots"
+          - "Backup directory: {{ backup.directory }}"
+          - "Retention: {{ backup.retention_days }} days"
+
+    - name: Ensure backup directory exists
+      file:
+        path: "{{ backup.directory }}"
+        state: directory
+        mode: '0755'
+
+  tasks:
+    - name: Backup enabled honeypots
+      block:
+        - name: Set backup timestamp
+          set_fact:
+            backup_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+
+        - name: Backup honeypot data and config
+          include_role:
+            name: honeypot_base
+            tasks_from: backup.yml
+          vars:
+            honeypot_name: "{{ item.key }}"
+            honeypot_config: "{{ item.value }}"
+          loop: "{{ honeypots | dict2items }}"
+          when: item.value.enabled | default(false)
+          tags:
+            - "{{ item.key }}"
+
+  post_tasks:
+    - name: List created backups
+      find:
+        paths: "{{ backup.directory }}"
+        patterns: "*_{{ backup_timestamp }}.tar.gz"
+      register: backup_files
+
+    - name: Display backup summary
+      debug:
+        msg:
+          - "=========================================="
+          - "Honeypot Backup Complete"
+          - "=========================================="
+          - "Backed up honeypots:"
+          - "{{ honeypots | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list }}"
+          - ""
+          - "Backup location: {{ backup.directory }}"
+          - "Created {{ backup_files.files | length }} backup(s)"
+          - ""
+          - "To restore from backup:"
+          - "  tar -xzf {{ backup.directory }}/<honeypot>_<timestamp>.tar.gz -C /"

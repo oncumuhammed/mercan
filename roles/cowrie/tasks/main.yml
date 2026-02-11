@@ -1,0 +1,18 @@
+---
+# =========================================================================
+# Cowrie Honeypot Role - Main Tasks
+# =========================================================================
+# This role deploys the Cowrie SSH/Telnet honeypot.
+# All shared functionality is inherited from honeypot_base.
+
+- name: Set honeypot variables for Cowrie
+  set_fact:
+    honeypot_name: "cowrie"
+    honeypot_config: "{{ honeypots.cowrie }}"
+    honeypot_compose_template: "docker-compose.yml.j2"
+
+- name: Deploy Cowrie honeypot
+  include_role:
+    name: honeypot_base
+    tasks_from: deploy.yml
+  when: honeypots.cowrie.enabled | default(true)

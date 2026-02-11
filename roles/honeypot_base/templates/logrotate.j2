@@ -1,0 +1,25 @@
+# =========================================================================
+# Logrotate Configuration for Honeypot: {{ honeypot_name }}
+# =========================================================================
+# This file is managed by Ansible. Manual changes will be overwritten.
+# Generated: {{ ansible_date_time.iso8601 }}
+
+{{ honeypot_logs_dir }}/*.log {
+    daily
+    rotate {{ logging.rotate_count | default(10) }}
+    size {{ logging.rotate_size | default('100M') }}
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    dateext
+    dateformat -%Y%m%d-%s
+    maxage {{ logging.retention_days | default(90) }}
+    create 0644 root root
+    sharedscripts
+    postrotate
+        # Optionally restart the honeypot service after rotation
+        # systemctl reload {{ honeypot_service_name }} > /dev/null 2>&1 || true
+    endscript
+}

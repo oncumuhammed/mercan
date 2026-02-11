@@ -1,0 +1,38 @@
+---
+# =========================================================================
+# Docker Role - RedHat/CentOS/Rocky/Alma Installation
+# =========================================================================
+
+- name: Remove old Docker packages (RedHat)
+  yum:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+      - podman
+      - runc
+    state: absent
+
+- name: Install yum-utils
+  yum:
+    name: yum-utils
+    state: present
+
+- name: Add Docker repository
+  yum_repository:
+    name: docker-ce
+    description: Docker CE Repository
+    baseurl: "https://download.docker.com/linux/{{ 'centos' if ansible_distribution in ['CentOS', 'Rocky', 'AlmaLinux'] else 'fedora' }}/$releasever/$basearch/stable"
+    gpgcheck: yes
+    gpgkey: "https://download.docker.com/linux/{{ 'centos' if ansible_distribution in ['CentOS', 'Rocky', 'AlmaLinux'] else 'fedora' }}/gpg"
+    enabled: yes
+
+- name: Install Docker packages
+  yum:
+    name: "{{ docker_packages_redhat }}"
+    state: present

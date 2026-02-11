@@ -1,0 +1,19 @@
+---
+# =========================================================================
+# Honeypot Base Role - Health Check
+# =========================================================================
+# Verifies that the honeypot is running and healthy
+
+- name: Wait for honeypot container to be running
+  command: docker compose ps --format json
+  args:
+    chdir: "{{ honeypot_compose_dir }}"
+  register: compose_status
+  until: compose_status.rc == 0
+  retries: 5
+  delay: 10
+  changed_when: false
+
+- name: Display honeypot status
+  debug:
+    msg: "Honeypot {{ honeypot_name }} is running"

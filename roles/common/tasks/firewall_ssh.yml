@@ -1,0 +1,46 @@
+---
+# =========================================================================
+# Common Role - SSH Firewall Configuration
+# =========================================================================
+# Opens SSH port based on detected firewall backend
+
+- name: Allow SSH through firewalld
+  firewalld:
+    service: ssh
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: detected_firewall == "firewalld"
+  ignore_errors: yes
+
+- name: Allow SSH through ufw
+  ufw:
+    rule: allow
+    port: "{{ firewall.ssh_port | default(22) }}"
+    proto: tcp
+  when: detected_firewall == "ufw"
+  ignore_errors: yes
+
+- name: Allow SSH through iptables
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ firewall.ssh_port | default(22) }}"
+    jump: ACCEPT
+    comment: "Allow SSH"
+  when: detected_firewall == "iptables"
+  ignore_errors: yes
+
+- name: Save iptables rules (Debian/Ubuntu)
+  shell: iptables-save > /etc/iptables/rules.v4
+  when:
+    - detected_firewall == "iptables"
+    - ansible_os_family == "Debian"
+  ignore_errors: yes
+
+- name: Save iptables rules (RedHat/CentOS)
+  shell: iptables-save > /etc/sysconfig/iptables
+  when:
+    - detected_firewall == "iptables"
+    - ansible_os_family == "RedHat"
+  ignore_errors: yes

@@ -1,0 +1,3 @@
+---
+dependencies:
+  - role: honeypot_base

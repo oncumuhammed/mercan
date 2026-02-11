@@ -1,0 +1,94 @@
+---
+# =========================================================================
+# Common Role - Main Tasks
+# =========================================================================
+# This role prepares the system for honeypot deployment by:
+# - Installing required packages
+# - Configuring firewall
+# - Handling SELinux/AppArmor
+# - Setting up system prerequisites
+
+- name: Detect OS family
+  set_fact:
+    os_family: "{{ ansible_os_family }}"
+    os_distribution: "{{ ansible_distribution }}"
+
+- name: Include distribution-specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+    - "default.yml"
+
+- name: Update package cache (Debian/Ubuntu)
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+  tags:
+    - packages
+
+- name: Install common packages (Debian/Ubuntu)
+  apt:
+    name: "{{ common_packages_debian }}"
+    state: present
+  when: ansible_os_family == "Debian"
+  tags:
+    - packages
+
+- name: Install common packages (RedHat/CentOS/Rocky/Alma)
+  yum:
+    name: "{{ common_packages_redhat }}"
+    state: present
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+
+- name: Ensure Python pip is up to date
+  pip:
+    name: pip
+    state: latest
+    executable: pip3
+  tags:
+    - packages
+
+- name: Install Python Docker SDK
+  pip:
+    name:
+      - docker
+      - docker-compose
+    state: present
+    executable: pip3
+  tags:
+    - packages
+
+- name: Detect firewall backend
+  include_tasks: firewall_detection.yml
+  tags:
+    - firewall
+
+- name: Configure firewall for SSH
+  include_tasks: firewall_ssh.yml
+  when: firewall.allow_ssh | default(true)
+  tags:
+    - firewall
+
+- name: Handle SELinux on RHEL-based systems
+  include_tasks: selinux.yml
+  when:
+    - ansible_os_family == "RedHat"
+    - security.selinux_enabled | default(true)
+  tags:
+    - selinux
+
+- name: Ensure required directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ backup.directory }}"
+    - "{{ honeypot_base_dir }}"
+  tags:
+    - directories

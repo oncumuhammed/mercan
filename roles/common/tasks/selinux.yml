@@ -1,0 +1,49 @@
+---
+# =========================================================================
+# Common Role - SELinux Configuration
+# =========================================================================
+# Handles SELinux configuration for RHEL-based systems
+
+- name: Check if SELinux is enabled
+  command: getenforce
+  register: selinux_status
+  changed_when: false
+  failed_when: false
+
+- name: Display SELinux status
+  debug:
+    msg: "SELinux status: {{ selinux_status.stdout }}"
+  when: selinux_status.rc == 0
+
+- name: Set SELinux to permissive for Docker (if enforcing)
+  selinux:
+    policy: targeted
+    state: permissive
+  when:
+    - selinux_status.rc == 0
+    - selinux_status.stdout == "Enforcing"
+  ignore_errors: yes
+
+- name: Allow Docker to bind to any port (SELinux)
+  seboolean:
+    name: "{{ item }}"
+    state: yes
+    persistent: yes
+  loop:
+    - docker_connect_any
+  when: selinux_status.rc == 0
+  ignore_errors: yes
+
+- name: Set SELinux context for honeypot directories
+  sefcontext:
+    target: "{{ honeypot_base_dir }}(/.*)?"
+    setype: container_file_t
+    state: present
+  when: selinux_status.rc == 0
+  ignore_errors: yes
+
+- name: Apply SELinux context to honeypot directories
+  command: "restorecon -Rv {{ honeypot_base_dir }}"
+  when: selinux_status.rc == 0
+  changed_when: false
+  ignore_errors: yes

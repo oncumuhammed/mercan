@@ -1,0 +1,54 @@
+# =========================================================================
+# Docker Compose Configuration for Cowrie Honeypot
+# =========================================================================
+# This file is managed by Ansible. Manual changes will be overwritten.
+# Generated: {{ ansible_date_time.iso8601 }}
+
+version: '3.8'
+
+services:
+  cowrie:
+    image: {{ honeypot_config.image }}
+    container_name: {{ honeypot_name }}
+    restart: {{ honeypot_config.restart_policy | default('unless-stopped') }}
+    
+    ports:
+{% for port in honeypot_config.ports %}
+      - "{{ port.host }}:{{ port.container }}/{{ port.protocol }}"
+{% endfor %}
+    
+    volumes:
+      - {{ honeypot_data_dir }}:/cowrie/cowrie-git/var
+      - {{ honeypot_logs_dir }}:/cowrie/cowrie-git/var/log/cowrie
+      - {{ honeypot_config_dir }}:/cowrie/cowrie-git/etc
+{% for volume in honeypot_config.volumes | default([]) %}
+      - {{ volume }}
+{% endfor %}
+    
+    environment:
+{% for key, value in honeypot_config.environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+    
+    networks:
+      - {{ honeypot_config.network_name }}
+    
+{% if honeypot_config.resource_limits is defined %}
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ honeypot_config.resource_limits.cpus }}'
+          memory: {{ honeypot_config.resource_limits.memory }}
+{% endif %}
+    
+{% if honeypot_config.healthcheck is defined %}
+    healthcheck:
+      test: {{ honeypot_config.healthcheck.test }}
+      interval: {{ honeypot_config.healthcheck.interval }}
+      timeout: {{ honeypot_config.healthcheck.timeout }}
+      retries: {{ honeypot_config.healthcheck.retries }}
+{% endif %}
+
+networks:
+  {{ honeypot_config.network_name }}:
+    external: true
