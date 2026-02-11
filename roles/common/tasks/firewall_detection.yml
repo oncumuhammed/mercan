@@ -1,0 +1,40 @@
+---
+# =========================================================================
+# Common Role - Firewall Detection
+# =========================================================================
+# Detects which firewall system is in use and sets variables accordingly
+
+- name: Check if firewalld is installed
+  command: which firewalld
+  register: firewalld_check
+  changed_when: false
+  failed_when: false
+
+- name: Check if ufw is installed
+  command: which ufw
+  register: ufw_check
+  changed_when: false
+  failed_when: false
+
+- name: Check if iptables is installed
+  command: which iptables
+  register: iptables_check
+  changed_when: false
+  failed_when: false
+
+- name: Set firewall backend
+  set_fact:
+    detected_firewall: >-
+      {%- if firewalld_check.rc == 0 -%}
+        firewalld
+      {%- elif ufw_check.rc == 0 -%}
+        ufw
+      {%- elif iptables_check.rc == 0 -%}
+        iptables
+      {%- else -%}
+        none
+      {%- endif -%}
+
+- name: Display detected firewall
+  debug:
+    msg: "Detected firewall: {{ detected_firewall }}"

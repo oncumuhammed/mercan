@@ -1,0 +1,46 @@
+---
+# =========================================================================
+# Honeypot Base Role - Backup Tasks
+# =========================================================================
+# Creates timestamped backups of honeypot data and configuration
+
+- name: Create backup directory
+  file:
+    path: "{{ backup.directory }}"
+    state: directory
+    mode: '0755'
+
+- name: Set backup timestamp
+  set_fact:
+    backup_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Create backup archive
+  archive:
+    path:
+      - "{{ honeypot_data_dir }}"
+      - "{{ honeypot_config_dir }}"
+    dest: "{{ backup.directory }}/{{ honeypot_name }}_{{ backup_timestamp }}.tar.gz"
+    format: gz
+    mode: '0644'
+  when: backup.enabled | default(true)
+
+- name: Display backup location
+  debug:
+    msg: "Backup created at {{ backup.directory }}/{{ honeypot_name }}_{{ backup_timestamp }}.tar.gz"
+
+- name: Find old backups
+  find:
+    paths: "{{ backup.directory }}"
+    patterns: "{{ honeypot_name }}_*.tar.gz"
+    age: "{{ backup.retention_days }}d"
+  register: old_backups
+  when: backup.retention_days is defined
+
+- name: Remove old backups
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_backups.files }}"
+  when:
+    - backup.retention_days is defined
+    - old_backups.files is defined

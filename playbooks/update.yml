@@ -1,0 +1,73 @@
+---
+# =========================================================================
+# Honeypot Update Playbook
+# =========================================================================
+# This playbook updates all enabled honeypots by pulling latest Docker
+# images and recreating containers.
+#
+# Usage:
+#   Update all enabled honeypots:
+#     ansible-playbook playbooks/update.yml
+#
+#   Update specific honeypot(s):
+#     ansible-playbook playbooks/update.yml --tags cowrie
+
+- name: Update Honeypot Services
+  hosts: honeypot_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display update information
+      debug:
+        msg: "Updating honeypots on {{ inventory_hostname }}"
+
+  tasks:
+    - name: Update enabled honeypots
+      block:
+        - name: Stop honeypot service
+          service:
+            name: "honeypot-{{ item.key }}"
+            state: stopped
+          loop: "{{ honeypots | dict2items }}"
+          when: item.value.enabled | default(false)
+          ignore_errors: yes
+          tags:
+            - "{{ item.key }}"
+
+        - name: Pull latest Docker images
+          command: docker compose pull
+          args:
+            chdir: "/opt/{{ item.key }}"
+          loop: "{{ honeypots | dict2items }}"
+          when: item.value.enabled | default(false)
+          tags:
+            - "{{ item.key }}"
+
+        - name: Recreate containers with new images
+          command: docker compose up -d --force-recreate
+          args:
+            chdir: "/opt/{{ item.key }}"
+          loop: "{{ honeypots | dict2items }}"
+          when: item.value.enabled | default(false)
+          tags:
+            - "{{ item.key }}"
+
+        - name: Start honeypot service
+          service:
+            name: "honeypot-{{ item.key }}"
+            state: started
+          loop: "{{ honeypots | dict2items }}"
+          when: item.value.enabled | default(false)
+          tags:
+            - "{{ item.key }}"
+
+  post_tasks:
+    - name: Display update summary
+      debug:
+        msg:
+          - "=========================================="
+          - "Honeypot Update Complete"
+          - "=========================================="
+          - "Updated honeypots:"
+          - "{{ honeypots | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list }}"

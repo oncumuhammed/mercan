@@ -1,0 +1,14 @@
+---
+# =========================================================================
+# Common Role - Handlers
+# =========================================================================
+
+- name: restart firewalld
+  service:
+    name: firewalld
+    state: restarted
+  when: detected_firewall == "firewalld"
+
+- name: reload firewalld
+  command: firewall-cmd --reload
+  when: detected_firewall == "firewalld"

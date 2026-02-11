@@ -1,0 +1,195 @@
+---
+# =========================================================================
+# Master Honeypot Configuration
+# =========================================================================
+# This file contains the honeypot registry and global configuration.
+# To add a new honeypot, simply add it to the 'honeypots' dictionary below
+# following the established pattern.
+
+# =========================================================================
+# Honeypot Registry
+# =========================================================================
+# Each honeypot is defined with standardized attributes for consistency.
+# The deployment playbooks iterate over this registry dynamically.
+
+honeypots:
+  # Cowrie - SSH/Telnet Honeypot
+  cowrie:
+    enabled: true
+    description: "SSH and Telnet honeypot"
+    image: "cowrie/cowrie:latest"
+    ports:
+      - { host: 2222, container: 2222, protocol: "tcp" }
+      - { host: 2223, container: 2223, protocol: "tcp" }
+    volumes: []  # Additional volumes beyond standard structure
+    environment:
+      COWRIE_HOSTNAME: "cowrie-honeypot"
+      COWRIE_LOG_PATH: "/cowrie/cowrie-git/var/log/cowrie"
+    resource_limits:
+      cpus: "0.5"
+      memory: "512M"
+    network_name: "honeypot_cowrie"
+    healthcheck:
+      test: "nc -z localhost 2222"
+      interval: "30s"
+      timeout: "10s"
+      retries: 3
+    restart_policy: "unless-stopped"
+
+  # Dionaea - Multi-protocol Honeypot
+  dionaea:
+    enabled: true
+    description: "Multi-protocol honeypot (FTP, HTTP, HTTPS, SMB, MySQL, etc.)"
+    image: "dinotools/dionaea:latest"
+    ports:
+      - { host: 21, container: 21, protocol: "tcp" }
+      - { host: 80, container: 80, protocol: "tcp" }
+      - { host: 443, container: 443, protocol: "tcp" }
+      - { host: 445, container: 445, protocol: "tcp" }
+      - { host: 1433, container: 1433, protocol: "tcp" }
+      - { host: 3306, container: 3306, protocol: "tcp" }
+      - { host: 5060, container: 5060, protocol: "tcp" }
+      - { host: 5060, container: 5060, protocol: "udp" }
+      - { host: 11211, container: 11211, protocol: "tcp" }
+    volumes: []
+    environment: {}
+    resource_limits:
+      cpus: "1.0"
+      memory: "1G"
+    network_name: "honeypot_dionaea"
+    healthcheck:
+      test: "pgrep -x dionaea"
+      interval: "30s"
+      timeout: "10s"
+      retries: 3
+    restart_policy: "unless-stopped"
+
+  # Honeytrap - Advanced Trap Framework
+  honeytrap:
+    enabled: true
+    description: "Advanced network trap framework"
+    image: "honeytrap/honeytrap:latest"
+    ports:
+      - { host: 8000, container: 8000, protocol: "tcp" }
+      - { host: 8001, container: 8001, protocol: "tcp" }
+      - { host: 8002, container: 8002, protocol: "tcp" }
+      - { host: 8003, container: 8003, protocol: "tcp" }
+      - { host: 8004, container: 8004, protocol: "tcp" }
+      - { host: 8005, container: 8005, protocol: "tcp" }
+      - { host: 8006, container: 8006, protocol: "tcp" }
+      - { host: 8007, container: 8007, protocol: "tcp" }
+      - { host: 8008, container: 8008, protocol: "tcp" }
+      - { host: 8009, container: 8009, protocol: "tcp" }
+      - { host: 8010, container: 8010, protocol: "tcp" }
+    volumes: []
+    environment: {}
+    resource_limits:
+      cpus: "0.5"
+      memory: "512M"
+    network_name: "honeypot_honeytrap"
+    healthcheck:
+      test: "nc -z localhost 8000"
+      interval: "30s"
+      timeout: "10s"
+      retries: 3
+    restart_policy: "unless-stopped"
+
+  # Conpot - ICS/SCADA Honeypot
+  conpot:
+    enabled: true
+    description: "Industrial Control Systems (ICS/SCADA) honeypot"
+    image: "honeynet/conpot:latest"
+    ports:
+      - { host: 8800, container: 8800, protocol: "tcp" }   # HTTP
+      - { host: 102, container: 102, protocol: "tcp" }     # S7comm
+      - { host: 502, container: 502, protocol: "tcp" }     # Modbus
+      - { host: 161, container: 161, protocol: "udp" }     # SNMP
+      - { host: 47808, container: 47808, protocol: "tcp" } # BACnet
+    volumes: []
+    environment:
+      CONPOT_TEMPLATE: "default"
+    resource_limits:
+      cpus: "0.5"
+      memory: "512M"
+    network_name: "honeypot_conpot"
+    healthcheck:
+      test: "nc -z localhost 8800"
+      interval: "30s"
+      timeout: "10s"
+      retries: 3
+    restart_policy: "unless-stopped"
+
+  # Elasticpot - Elasticsearch Honeypot
+  elasticpot:
+    enabled: true
+    description: "Elasticsearch honeypot"
+    image: "schmalle/elasticpot:latest"
+    ports:
+      - { host: 9200, container: 9200, protocol: "tcp" }
+    volumes: []
+    environment: {}
+    resource_limits:
+      cpus: "0.5"
+      memory: "512M"
+    network_name: "honeypot_elasticpot"
+    healthcheck:
+      test: "nc -z localhost 9200"
+      interval: "30s"
+      timeout: "10s"
+      retries: 3
+    restart_policy: "unless-stopped"
+
+# =========================================================================
+# Global Settings
+# =========================================================================
+
+# Base directory for all honeypot data
+honeypot_base_dir: "/opt"
+
+# Backup configuration
+backup:
+  enabled: true
+  directory: "/var/backups/honeypots"
+  retention_days: 30
+  compress: true
+
+# Logging configuration
+logging:
+  retention_days: 90
+  rotate_size: "100M"
+  rotate_count: 10
+
+# Docker configuration
+docker:
+  compose_version: "2.24.0"
+  install_method: "repository"  # repository or script
+  service_enabled: true
+
+# Firewall configuration
+firewall:
+  enabled: true
+  default_policy: "deny"
+  allow_ssh: true
+  ssh_port: 22
+
+# Systemd configuration
+systemd:
+  enabled: true
+  restart_on_failure: true
+
+# Network configuration
+network:
+  driver: "bridge"
+
+# ELK Stack integration (optional)
+elk:
+  enabled: false
+  elasticsearch_host: "localhost"
+  elasticsearch_port: 9200
+  logstash_host: "localhost"
+  logstash_port: 5044
+
+# Security settings
+security:
+  selinux_enabled: true  # Auto-detected on RHEL-based systems
+  apparmor_enabled: false  # Auto-detected on Debian-based systems

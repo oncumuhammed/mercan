@@ -1,0 +1,16 @@
+---
+# =========================================================================
+# Conpot Honeypot Role - Main Tasks
+# =========================================================================
+
+- name: Set honeypot variables for Conpot
+  set_fact:
+    honeypot_name: "conpot"
+    honeypot_config: "{{ honeypots.conpot }}"
+    honeypot_compose_template: "docker-compose.yml.j2"
+
+- name: Deploy Conpot honeypot
+  include_role:
+    name: honeypot_base
+    tasks_from: deploy.yml
+  when: honeypots.conpot.enabled | default(true)

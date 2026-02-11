@@ -1,0 +1,8 @@
+---
+# =========================================================================
+# Conpot Honeypot Role - Default Variables
+# =========================================================================
+
+honeypot_name: "conpot"
+honeypot_config: "{{ honeypots.conpot }}"
+honeypot_compose_template: "docker-compose.yml.j2"

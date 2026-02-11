@@ -1,0 +1,21 @@
+---
+# Honeypot Deployment Inventory Example
+# Copy this file to hosts.yml and customize for your environment
+
+all:
+  children:
+    honeypot_servers:
+      hosts:
+        honeypot-01:
+          ansible_host: 192.168.1.100
+          ansible_user: root
+          ansible_port: 22
+        # Add more honeypot servers here
+        # honeypot-02:
+        #   ansible_host: 192.168.1.101
+        #   ansible_user: ubuntu
+        #   ansible_become: yes
+  
+  vars:
+    # Global connection settings
+    ansible_python_interpreter: /usr/bin/python3

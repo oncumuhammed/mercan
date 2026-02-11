@@ -1,0 +1,16 @@
+---
+# =========================================================================
+# Honeytrap Honeypot Role - Main Tasks
+# =========================================================================
+
+- name: Set honeypot variables for Honeytrap
+  set_fact:
+    honeypot_name: "honeytrap"
+    honeypot_config: "{{ honeypots.honeytrap }}"
+    honeypot_compose_template: "docker-compose.yml.j2"
+
+- name: Deploy Honeytrap honeypot
+  include_role:
+    name: honeypot_base
+    tasks_from: deploy.yml
+  when: honeypots.honeytrap.enabled | default(true)

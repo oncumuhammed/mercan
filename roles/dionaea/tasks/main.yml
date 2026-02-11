@@ -1,0 +1,16 @@
+---
+# =========================================================================
+# Dionaea Honeypot Role - Main Tasks
+# =========================================================================
+
+- name: Set honeypot variables for Dionaea
+  set_fact:
+    honeypot_name: "dionaea"
+    honeypot_config: "{{ honeypots.dionaea }}"
+    honeypot_compose_template: "docker-compose.yml.j2"
+
+- name: Deploy Dionaea honeypot
+  include_role:
+    name: honeypot_base
+    tasks_from: deploy.yml
+  when: honeypots.dionaea.enabled | default(true)

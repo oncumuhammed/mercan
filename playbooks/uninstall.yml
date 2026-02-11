@@ -1,0 +1,61 @@
+---
+# =========================================================================
+# Honeypot Uninstall Playbook
+# =========================================================================
+# This playbook removes honeypots and optionally their data.
+#
+# WARNING: This will stop and remove honeypot services!
+# Use --extra-vars "remove_data=true" to also delete data directories.
+#
+# Usage:
+#   Uninstall all honeypots (keep data):
+#     ansible-playbook playbooks/uninstall.yml
+#
+#   Uninstall and remove data:
+#     ansible-playbook playbooks/uninstall.yml --extra-vars "remove_data=true"
+#
+#   Uninstall specific honeypot(s):
+#     ansible-playbook playbooks/uninstall.yml --tags cowrie
+
+- name: Uninstall Honeypot Services
+  hosts: honeypot_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display warning
+      debug:
+        msg:
+          - "WARNING: This will uninstall honeypots!"
+          - "Data will be {{ 'DELETED' if remove_data | default(false) else 'PRESERVED' }}"
+          - "To also remove data, use: --extra-vars 'remove_data=true'"
+
+    - name: Pause for confirmation
+      pause:
+        prompt: "Press ENTER to continue, or Ctrl+C to abort"
+      when: not (auto_approve | default(false))
+
+  tasks:
+    - name: Uninstall enabled honeypots
+      include_role:
+        name: honeypot_base
+        tasks_from: uninstall.yml
+      vars:
+        honeypot_name: "{{ item.key }}"
+        honeypot_config: "{{ item.value }}"
+      loop: "{{ honeypots | dict2items }}"
+      when: item.value.enabled | default(false)
+      tags:
+        - "{{ item.key }}"
+
+  post_tasks:
+    - name: Display uninstall summary
+      debug:
+        msg:
+          - "=========================================="
+          - "Honeypot Uninstall Complete"
+          - "=========================================="
+          - "Uninstalled honeypots:"
+          - "{{ honeypots | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list }}"
+          - ""
+          - "Data {{ 'was deleted' if remove_data | default(false) else 'was preserved in /opt/<honeypot-name>/' }}"

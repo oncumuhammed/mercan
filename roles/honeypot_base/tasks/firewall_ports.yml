@@ -1,0 +1,48 @@
+---
+# =========================================================================
+# Honeypot Base Role - Firewall Port Configuration
+# =========================================================================
+# Opens firewall ports for a honeypot based on detected firewall backend
+
+- name: Open port in firewalld
+  firewalld:
+    port: "{{ port_config.host }}/{{ port_config.protocol }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  when: detected_firewall == "firewalld"
+  ignore_errors: yes
+
+- name: Open port in ufw
+  ufw:
+    rule: allow
+    port: "{{ port_config.host }}"
+    proto: "{{ port_config.protocol }}"
+  when: detected_firewall == "ufw"
+  ignore_errors: yes
+
+- name: Open port in iptables
+  iptables:
+    chain: INPUT
+    protocol: "{{ port_config.protocol }}"
+    destination_port: "{{ port_config.host }}"
+    jump: ACCEPT
+    comment: "Honeypot {{ honeypot_name }} - {{ port_config.host }}/{{ port_config.protocol }}"
+  when: detected_firewall == "iptables"
+  ignore_errors: yes
+
+- name: Save iptables rules (Debian/Ubuntu)
+  shell: iptables-save > /etc/iptables/rules.v4
+  when:
+    - detected_firewall == "iptables"
+    - ansible_os_family == "Debian"
+  changed_when: false
+  ignore_errors: yes
+
+- name: Save iptables rules (RedHat/CentOS)
+  shell: iptables-save > /etc/sysconfig/iptables
+  when:
+    - detected_firewall == "iptables"
+    - ansible_os_family == "RedHat"
+  changed_when: false
+  ignore_errors: yes

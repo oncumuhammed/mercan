@@ -1,0 +1,55 @@
+# =========================================================================
+# Docker Compose Configuration for Dionaea Honeypot
+# =========================================================================
+# Multi-protocol honeypot (FTP, HTTP, HTTPS, SMB, MySQL, MSSQL, SIP, etc.)
+
+version: '3.8'
+
+services:
+  dionaea:
+    image: {{ honeypot_config.image }}
+    container_name: {{ honeypot_name }}
+    restart: {{ honeypot_config.restart_policy | default('unless-stopped') }}
+    
+    ports:
+{% for port in honeypot_config.ports %}
+      - "{{ port.host }}:{{ port.container }}/{{ port.protocol }}"
+{% endfor %}
+    
+    volumes:
+      - {{ honeypot_data_dir }}:/opt/dionaea/var
+      - {{ honeypot_logs_dir }}:/opt/dionaea/var/log
+      - {{ honeypot_config_dir }}:/opt/dionaea/etc/dionaea
+{% for volume in honeypot_config.volumes | default([]) %}
+      - {{ volume }}
+{% endfor %}
+    
+{% if honeypot_config.environment %}
+    environment:
+{% for key, value in honeypot_config.environment.items() %}
+      {{ key }}: "{{ value }}"
+{% endfor %}
+{% endif %}
+    
+    networks:
+      - {{ honeypot_config.network_name }}
+    
+{% if honeypot_config.resource_limits is defined %}
+    deploy:
+      resources:
+        limits:
+          cpus: '{{ honeypot_config.resource_limits.cpus }}'
+          memory: {{ honeypot_config.resource_limits.memory }}
+{% endif %}
+    
+{% if honeypot_config.healthcheck is defined %}
+    healthcheck:
+      test: {{ honeypot_config.healthcheck.test }}
+      interval: {{ honeypot_config.healthcheck.interval }}
+      timeout: {{ honeypot_config.healthcheck.timeout }}
+      retries: {{ honeypot_config.healthcheck.retries }}
+{% endif %}
+
+networks:
+  {{ honeypot_config.network_name }}:
+    external: true

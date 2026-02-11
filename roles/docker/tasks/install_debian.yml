@@ -1,0 +1,51 @@
+---
+# =========================================================================
+# Docker Role - Debian/Ubuntu Installation
+# =========================================================================
+
+- name: Remove old Docker packages (Debian/Ubuntu)
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: Install prerequisites for Docker repository
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: yes
+
+- name: Create directory for Docker GPG key
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Docker GPG key
+  apt_key:
+    url: "{{ docker_repo_url_debian }}/gpg"
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else ansible_architecture }}] {{ docker_repo_url_debian }} {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: Update apt cache after adding repository
+  apt:
+    update_cache: yes
+
+- name: Install Docker packages
+  apt:
+    name: "{{ docker_packages_debian }}"
+    state: present

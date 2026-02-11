@@ -1,0 +1,102 @@
+---
+# =========================================================================
+# Honeypot Base Role - Deploy Tasks
+# =========================================================================
+# Shared deployment tasks for all honeypots.
+# This file is included by individual honeypot roles during deployment.
+
+- name: Create honeypot directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+  loop:
+    - "{{ honeypot_compose_dir }}"
+    - "{{ honeypot_data_dir }}"
+    - "{{ honeypot_logs_dir }}"
+    - "{{ honeypot_config_dir }}"
+  tags:
+    - directories
+
+- name: Create Docker network for honeypot
+  docker_network:
+    name: "{{ honeypot_config.network_name }}"
+    driver: "{{ network.driver | default('bridge') }}"
+    state: present
+  tags:
+    - docker
+    - network
+
+- name: Deploy Docker Compose file
+  template:
+    src: "{{ honeypot_compose_template }}"
+    dest: "{{ honeypot_compose_dir }}/docker-compose.yml"
+    mode: '0644'
+  notify: restart honeypot
+  tags:
+    - docker
+    - compose
+
+- name: Deploy systemd service file
+  template:
+    src: systemd.service.j2
+    dest: "/etc/systemd/system/{{ honeypot_service_name }}.service"
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart honeypot
+  tags:
+    - systemd
+
+- name: Deploy logrotate configuration
+  template:
+    src: logrotate.j2
+    dest: "/etc/logrotate.d/{{ honeypot_name }}"
+    mode: '0644'
+  tags:
+    - logrotate
+
+- name: Configure firewall ports for honeypot
+  include_tasks: firewall_ports.yml
+  loop: "{{ honeypot_config.ports }}"
+  loop_control:
+    loop_var: port_config
+  tags:
+    - firewall
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: yes
+  tags:
+    - systemd
+
+- name: Pull Docker images
+  command: docker compose pull
+  args:
+    chdir: "{{ honeypot_compose_dir }}"
+  changed_when: false
+  tags:
+    - docker
+
+- name: Start honeypot with Docker Compose
+  command: docker compose up -d
+  args:
+    chdir: "{{ honeypot_compose_dir }}"
+  tags:
+    - docker
+
+- name: Enable and start systemd service
+  service:
+    name: "{{ honeypot_service_name }}"
+    enabled: yes
+    state: started
+  tags:
+    - systemd
+
+- name: Wait for honeypot to be healthy
+  include_tasks: healthcheck.yml
+  when: honeypot_config.healthcheck is defined
+  tags:
+    - healthcheck

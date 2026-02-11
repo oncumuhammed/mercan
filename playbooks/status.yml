@@ -1,0 +1,47 @@
+---
+# =========================================================================
+# Honeypot Status Check Playbook
+# =========================================================================
+# This playbook checks the status of all enabled honeypots.
+#
+# Usage:
+#   Check all honeypots:
+#     ansible-playbook playbooks/status.yml
+#
+#   Check specific honeypot(s):
+#     ansible-playbook playbooks/status.yml --tags cowrie
+
+- name: Check Honeypot Status
+  hosts: honeypot_servers
+  become: yes
+  gather_facts: yes
+
+  pre_tasks:
+    - name: Display status check information
+      debug:
+        msg: "Checking status of honeypots on {{ inventory_hostname }}"
+
+  tasks:
+    - name: Check status of enabled honeypots
+      include_role:
+        name: honeypot_base
+        tasks_from: status.yml
+      vars:
+        honeypot_name: "{{ item.key }}"
+        honeypot_config: "{{ item.value }}"
+      loop: "{{ honeypots | dict2items }}"
+      when: item.value.enabled | default(false)
+      tags:
+        - "{{ item.key }}"
+
+  post_tasks:
+    - name: Display summary
+      debug:
+        msg:
+          - "=========================================="
+          - "Status Check Complete"
+          - "=========================================="
+          - "Checked honeypots:"
+          - "{{ honeypots | dict2items | selectattr('value.enabled', 'equalto', true) | map(attribute='key') | list }}"
+          - ""
+          - "For detailed logs, check /opt/<honeypot-name>/logs/"

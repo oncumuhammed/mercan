@@ -1,0 +1,16 @@
+---
+# =========================================================================
+# Elasticpot Honeypot Role - Main Tasks
+# =========================================================================
+
+- name: Set honeypot variables for Elasticpot
+  set_fact:
+    honeypot_name: "elasticpot"
+    honeypot_config: "{{ honeypots.elasticpot }}"
+    honeypot_compose_template: "docker-compose.yml.j2"
+
+- name: Deploy Elasticpot honeypot
+  include_role:
+    name: honeypot_base
+    tasks_from: deploy.yml
+  when: honeypots.elasticpot.enabled | default(true)

@@ -1,0 +1,11 @@
+---
+# =========================================================================
+# Honeypot Base Role - Main Tasks
+# =========================================================================
+# This file should not be called directly. Individual honeypot roles
+# will include specific task files (deploy.yml, backup.yml, etc.)
+# based on the operation being performed.
+
+- name: This role should not be called directly
+  debug:
+    msg: "honeypot_base role should be used by including specific task files (deploy.yml, backup.yml, etc.)"

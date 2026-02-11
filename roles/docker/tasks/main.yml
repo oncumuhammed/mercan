@@ -1,0 +1,39 @@
+---
+# =========================================================================
+# Docker Role - Main Tasks
+# =========================================================================
+# Installs Docker and Docker Compose on all supported distributions
+
+- name: Include distribution-specific installation tasks
+  include_tasks: "install_{{ ansible_os_family | lower }}.yml"
+
+- name: Ensure Docker service is started and enabled
+  service:
+    name: docker
+    state: "{{ docker_service_state }}"
+    enabled: "{{ docker_service_enabled }}"
+
+- name: Add current user to docker group
+  user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: yes
+  when: ansible_user_id != "root"
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Display Docker version
+  debug:
+    msg: "Docker installed: {{ docker_version.stdout }}"
+
+- name: Verify Docker Compose installation
+  command: docker compose version
+  register: docker_compose_version_output
+  changed_when: false
+
+- name: Display Docker Compose version
+  debug:
+    msg: "Docker Compose installed: {{ docker_compose_version_output.stdout }}"

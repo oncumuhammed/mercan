@@ -1,0 +1,8 @@
+---
+# =========================================================================
+# Elasticpot Honeypot Role - Default Variables
+# =========================================================================
+
+honeypot_name: "elasticpot"
+honeypot_config: "{{ honeypots.elasticpot }}"
+honeypot_compose_template: "docker-compose.yml.j2"

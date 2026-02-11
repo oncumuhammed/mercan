@@ -1,0 +1,13 @@
+---
+# =========================================================================
+# Cowrie Honeypot Role - Default Variables
+# =========================================================================
+
+# Honeypot name (used by honeypot_base)
+honeypot_name: "cowrie"
+
+# Get configuration from registry
+honeypot_config: "{{ honeypots.cowrie }}"
+
+# Template path for Docker Compose file
+honeypot_compose_template: "docker-compose.yml.j2"
